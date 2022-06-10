@@ -374,8 +374,8 @@ def parse_command_line(argv):
                         help="The directory to recursively process (default: {}).".format(default_dir))
     parser.add_argument("-f", "--files", dest="files", nargs='*', type=str,
                         help="The list of files to process. If not empty - will disable '--dir' option")
-    parser.add_argument("-b", action="store_true",
-                        help="Back up all files which get changed to a copy with .bak added to the name")
+    # parser.add_argument("-b", action="store_true",
+    #                     help="Back up all files which get changed to a copy with .bak added to the name")
     parser.add_argument("-t", "--tmpl", dest="tmpl", default=None,
                         help="Template name or file to use.")
     parser.add_argument("-s", "--settings", dest="settings", default=None,
@@ -687,11 +687,38 @@ def make_backup(file, arguments):
     :param arguments: program args, only backs up, if required by an option
     :return:
     """
-    if arguments.b:
-        LOGGER.info("Backing up file {} to {}".format(file, file + ".bak"))
-        if not arguments.dry:
-            copyfile(file, file + ".bak")
+    LOGGER.info("Backing up file {} to {}".format(file, file + ".bak"))
+    if not arguments.dry:
+        copyfile(file, file + ".bak")
 
+def delete_backup(file, arguments):
+    if not arguments.dry:
+        os.remove(file + ".bak")
+
+
+def verify_if_modified(file, arguments):
+    if not arguments.dry:
+        with open(file + ".bak", 'r', encoding=arguments.encoding) as f:
+            orig_lines = f.readlines()
+
+        with open(file, 'r', encoding=arguments.encoding) as f:
+            lines = f.readlines()
+        
+        return orig_lines == lines
+
+    return True
+
+def roll_back(file, arguments):
+    """
+    Backup file by copying it to a file with the extension .bak appended to the name.
+    :param file: file to back up
+    :param arguments: program args, only backs up, if required by an option
+    :return:
+    """
+    LOGGER.info("Rolling changes back {} to {}".format(file + ".bak", file))
+    if not arguments.dry:
+        os.remove(file)
+        copyfile(file + ".bak", file)
 
 def main():
     """Main function."""
@@ -862,6 +889,9 @@ def main():
                                     # There is some header, but not license - add an empty line 
                                     fw.write("\n")
                                 fw.writelines(lines[skip:])
+                        if verify_if_modified(file, arguments) == False:
+                            roll_back(file, arguments)
+                        delete_backup(file)
                         # TODO: optionally remove backup if all worked well?
                 else:
                     # no template lines, just update the line with the year, if we found a year
@@ -876,6 +906,9 @@ def main():
                                 fw.writelines(lines[0:years_line])
                                 fw.write(yearsPattern.sub(years, lines[years_line]))
                                 fw.writelines(lines[years_line + 1:])
+                            if verify_if_modified(file, arguments) == False:
+                                roll_back(file, arguments)
+                            delete_backup(file)
                             # TODO: optionally remove backup if all worked well
             return 0
     finally:
