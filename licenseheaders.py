@@ -840,6 +840,7 @@ def main():
                 LOGGER.debug("Patterns: %s", patterns)
                 paths = get_paths(patterns, arguments.dir)
                 
+            modified = 0
             for file in paths:
                 LOGGER.debug("Considering file: {}".format(file))
                 file = os.path.normpath(file)
@@ -891,6 +892,8 @@ def main():
                                 fw.writelines(lines[skip:])
                         if compare_with_backup(file, arguments):
                             roll_back(file, arguments)
+                        else:
+                            modified += 1
                         delete_backup(file, arguments)
                 else:
                     # no template lines, just update the line with the year, if we found a year
@@ -907,8 +910,10 @@ def main():
                                 fw.writelines(lines[years_line + 1:])
                             if compare_with_backup(file, arguments):
                                 roll_back(file, arguments)
+                            else:
+                               modified += 1
                             delete_backup(file, arguments)
-            return 0
+            return 0 if modified == 0 else 1
     finally:
         logging.shutdown()
 
