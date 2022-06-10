@@ -696,7 +696,7 @@ def delete_backup(file, arguments):
         os.remove(file + ".bak")
 
 
-def verify_if_modified(file, arguments):
+def compare_with_backup(file, arguments):
     if not arguments.dry:
         with open(file + ".bak", 'r', encoding=arguments.encoding) as f:
             orig_lines = f.readlines()
@@ -889,9 +889,9 @@ def main():
                                     # There is some header, but not license - add an empty line 
                                     fw.write("\n")
                                 fw.writelines(lines[skip:])
-                        if verify_if_modified(file, arguments) == False:
+                        if compare_with_backup(file, arguments):
                             roll_back(file, arguments)
-                        delete_backup(file)
+                        delete_backup(file, arguments)
                         # TODO: optionally remove backup if all worked well?
                 else:
                     # no template lines, just update the line with the year, if we found a year
@@ -906,9 +906,9 @@ def main():
                                 fw.writelines(lines[0:years_line])
                                 fw.write(yearsPattern.sub(years, lines[years_line]))
                                 fw.writelines(lines[years_line + 1:])
-                            if verify_if_modified(file, arguments) == False:
+                            if compare_with_backup(file, arguments):
                                 roll_back(file, arguments)
-                            delete_backup(file)
+                            delete_backup(file, arguments)
                             # TODO: optionally remove backup if all worked well
             return 0
     finally:
