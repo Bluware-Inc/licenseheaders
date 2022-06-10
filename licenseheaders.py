@@ -892,7 +892,6 @@ def main():
                         if compare_with_backup(file, arguments):
                             roll_back(file, arguments)
                         delete_backup(file, arguments)
-                        # TODO: optionally remove backup if all worked well?
                 else:
                     # no template lines, just update the line with the year, if we found a year
                     years_line = finfo["yearsLine"]
@@ -909,7 +908,6 @@ def main():
                             if compare_with_backup(file, arguments):
                                 roll_back(file, arguments)
                             delete_backup(file, arguments)
-                            # TODO: optionally remove backup if all worked well
             return 0
     finally:
         logging.shutdown()
